@@ -85,7 +85,7 @@ public class virtualModem {
 
     public void img() throws IOException {
         String imgCode = new String();
-        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\img.jpeg");
+        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\imgError.jpeg");
         int k;
         int counter = 0;
         byte[] imgBytes = new byte[200000];
@@ -94,7 +94,7 @@ public class virtualModem {
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        imgCode ="M5285\r";
+        imgCode ="M6535\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -110,7 +110,7 @@ public class virtualModem {
             try{
                 k = modem.read();
                 if (k==-1) break;
-                System.out.print((byte)k+"++");
+                System.out.print((byte)k);
                 imgBytes[counter] = (byte)k;
                 counter++;
             } catch (Exception x){
@@ -128,7 +128,6 @@ public class virtualModem {
         hexString = StringUtils.substringBetween(hexString, "ffd8", "ffd9");
         hexString = "ffd8" + hexString + "ffd9";
         System.out.println(hexString);
-
         byte[] finalImg = decodeHexString(hexString);
         InputStream is = new ByteArrayInputStream(finalImg);
         BufferedImage newBi = ImageIO.read(is);
@@ -164,5 +163,69 @@ public class virtualModem {
                     "Invalid Hexadecimal Character: "+ hexChar);
         }
         return digit;
+    }
+
+    public void gps() throws IOException {
+        String gpsCode = new String();
+        String imgCode = new String();
+        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\img2.jpeg");
+        int k;
+        int counter = 0;
+        byte[] imgBytes = new byte[200000];
+        Modem modem;
+        modem = new Modem();
+        modem.setSpeed(80000);
+        modem.setTimeout(2000);
+        modem.open("ithaki");
+        gpsCode = "P7862R=1003050\r";
+        for (;;) {
+            try {
+                k = modem.read();
+                if (k == -1) break;
+                System.out.print((char) k);
+
+            } catch (Exception x) {
+                break;
+            }
+        }
+        modem.write(gpsCode.getBytes());
+        for (;;) {
+            try {
+                k = modem.read();
+                if (k == -1) break;
+                System.out.print((char) k);
+
+            } catch (Exception x) {
+                break;
+            }
+        }
+        imgCode = "P7862T=225733403737\r";
+        modem.write(imgCode.getBytes());
+        for(;;){
+            try{
+                k = modem.read();
+                if (k==-1) break;
+                System.out.print((byte)k);
+                imgBytes[counter] = (byte)k;
+                counter++;
+            } catch (Exception x){
+                break;
+            }
+        }
+        StringBuffer hexStringBuffer = new StringBuffer();
+        String hexString = new String();
+        for (int i = 0; i < imgBytes.length; i++) {
+            hexStringBuffer.append(byteToHex(imgBytes[i]));
+            hexString = hexStringBuffer.toString();
+        }
+
+        hexString = StringUtils.substringBetween(hexString, "ffd8", "ffd9");
+        hexString = "ffd8" + hexString + "ffd9";
+        System.out.println(hexString);
+        byte[] finalImg = decodeHexString(hexString);
+        InputStream is = new ByteArrayInputStream(finalImg);
+        BufferedImage newBi = ImageIO.read(is);
+        ImageIO.write(newBi, "jpeg", target.toFile());
+        modem.close();
     }
 }
