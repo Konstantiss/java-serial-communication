@@ -13,6 +13,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 public class virtualModem {
     public static void main(String[] args) throws IOException {
@@ -25,12 +26,11 @@ public class virtualModem {
 //            (new virtualModem()).echo();
 //        }
 //        else System.out.println("error");
-        (new virtualModem()).img();
+        (new virtualModem()).echo();
     }
 
     public void demo() {
         int k;
-
         Modem modem;
         modem = new Modem();
         modem.setSpeed(1000);
@@ -51,41 +51,52 @@ public class virtualModem {
         modem.close();
     }
 
-    public void echo() {
+    public void echo() throws IOException {
         int k;
         int packetCount = 0;
-        long[] time = new long[4];
         int counter = 0;
         char[] chars = new char[100];
-        //File packets = new File("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\packets.xls");
+        long responseTime = 0;
+        long startTime = 0;
+        File packets = new File("packets.txt");
+        FileWriter writer = new FileWriter(packets);
+        PrintWriter pw = new PrintWriter(writer);
         String echoCode = new String();
-        echoCode = "E3810\r";
+        String echoMsg = "";
+        long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
+        echoCode = "E7406\r";
         Modem modem;
         modem = new Modem();
-        modem.setSpeed(8000);
-        modem.setTimeout(2000);
+        modem.setSpeed(80000);
+        modem.setTimeout(100);
         modem.open("ithaki");
-        System.out.println("Here");
-
-        while(packetCount < 10){
+        while (System.nanoTime() < endTime) {
+            modem.write(echoCode.getBytes());
+            startTime = System.currentTimeMillis();
             for (;;) {
-                modem.write(echoCode.getBytes());
                 try {
                     k = modem.read();
-                    if (k == -1) break;
-                    System.out.print((char) k);
-
+                    if (k == -1){
+                        responseTime = System.currentTimeMillis() - startTime - 100;
+                        break;
+                    }
+                    echoMsg += (char)k;
                 } catch (Exception x) {
                     break;
                 }
             }
+            System.out.println(echoMsg+"\n");
+            pw.print(responseTime+", ");
+            System.out.println("Response time: "+responseTime);
+            echoMsg = "";
         }
+        pw.close();
         modem.close();
     }
 
     public void img() throws IOException {
         String imgCode = new String();
-        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\imgError.jpeg");
+        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\img.jpeg");
         int k;
         int counter = 0;
         byte[] imgBytes = new byte[200000];
@@ -94,7 +105,7 @@ public class virtualModem {
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        imgCode ="M6535\r";
+        imgCode ="M0268\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -227,5 +238,144 @@ public class virtualModem {
         BufferedImage newBi = ImageIO.read(is);
         ImageIO.write(newBi, "jpeg", target.toFile());
         modem.close();
+    }
+
+    public void ack() throws IOException {
+        String ackCode = new String();
+        String nackCode = new String();
+        String fcs = "";
+        char[] chars = new char[60];
+        char[] msg = new char[16];
+        boolean compare = false;
+        boolean first = true;
+        int k, k1, k2;
+        int xor = 0;
+        int counter = 0;
+        int msgCounter = 0;
+        long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
+        File responseTimes = new File("ResponseTimesACK.txt");
+        FileWriter writer = new FileWriter(responseTimes);
+        PrintWriter pw = new PrintWriter(writer);
+        Modem modem;
+        modem = new Modem();
+        modem.setSpeed(80000);
+        modem.setTimeout(2000);
+        ackCode = "Q2583\r";
+        nackCode = "R1335\r";
+        modem.open("ithaki");
+        for (;;) {
+            try {
+                k = modem.read();
+                if (k == -1) break;
+                System.out.print((char) k);
+
+            } catch (Exception x) {
+                break;
+            }
+        }
+
+        modem.write(ackCode.getBytes());
+        for (;;) {
+            try {
+                k = modem.read();
+                if (k == -1) break;
+                if (counter == 49 || counter == 50 || counter == 51){
+                    char currentChar = (char)k;
+                    fcs += currentChar;
+                }
+                if ((char)k == '<') {
+                    compare = true;
+                    chars[counter] = (char)k;
+                    counter++;
+                    k = modem.read();
+                }
+                else if((char)k == '>') {
+                    compare = false;
+                }
+                if (compare) {
+                    chars[counter] = (char)k;
+                    msg[msgCounter] = (char)k;
+                    counter++;
+                    msgCounter++;
+                } else {
+                    chars[counter] = (char)k;
+                    counter++;
+                }
+            } catch (Exception x) {
+                System.out.println(x);
+                break;
+            }
+        }
+        xor = msg[0] ^ msg[1];
+        for(int i = 2; i < 16; i++){
+            xor ^= msg[i];
+        }
+        System.out.println(chars);
+        System.out.println(xor);
+        while(xor != Integer.parseInt(fcs)){
+            System.out.println("We got a prob");
+            xor = 0;
+            fcs = "";
+            counter = 0;
+            msgCounter = 0;
+            modem.write(nackCode.getBytes());
+            for (;;) {
+                try {
+                    k = modem.read();
+                    if (k == -1) break;
+                    if (counter == 49 || counter == 50 || counter == 51){
+                        char currentChar = (char)k;
+                        fcs += currentChar;
+                    }
+                    if ((char)k == '<') {
+                        compare = true;
+                        chars[counter] = (char)k;
+                        counter++;
+                        k = modem.read();
+                    }
+                    else if((char)k == '>') {
+                        compare = false;
+                    }
+                    if (compare) {
+                        chars[counter] = (char)k;
+                        msg[msgCounter] = (char)k;
+                        counter++;
+                        msgCounter++;
+                    } else {
+                        chars[counter] = (char)k;
+                        counter++;
+                    }
+                } catch (Exception x) {
+                    System.out.println(x);
+                    break;
+                }
+            }
+            xor = msg[0] ^ msg[1];
+            for(int i = 2; i < 16; i++){
+                xor ^= msg[i];
+            }
+            System.out.println(chars);
+            System.out.println(xor);
+        }
+
+//        System.out.println(msg);
+//        System.out.println(msg.contains(substring));
+//        while(!(msg.contains(substring))){
+//            msg = "";
+//            modem.write(nackCode.getBytes());
+//            for (;;) {
+//                try {
+//                    k = modem.read();
+//                    if (k == -1) break;
+//                    char currentChar = (char)k;
+//                    msg = msg + currentChar;
+//                    //System.out.print((char) k);
+//                } catch (Exception x) {
+//                    break;
+//                }
+//            }
+//            System.out.println(msg);
+//        }
+
     }
 }
