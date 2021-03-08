@@ -26,7 +26,7 @@ public class virtualModem {
 //            (new virtualModem()).echo();
 //        }
 //        else System.out.println("error");
-        (new virtualModem()).echo();
+        (new virtualModem()).ack();
     }
 
     public void demo() {
@@ -64,7 +64,7 @@ public class virtualModem {
         String echoCode = new String();
         String echoMsg = "";
         long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
-        echoCode = "E7406\r";
+        echoCode = "E9271\r";
         Modem modem;
         modem = new Modem();
         modem.setSpeed(80000);
@@ -76,11 +76,10 @@ public class virtualModem {
             for (;;) {
                 try {
                     k = modem.read();
-                    if (k == -1){
-                        responseTime = System.currentTimeMillis() - startTime - 100;
-                        break;
-                    }
+                    if (k == -1) break;
+                    if(counter == 57) responseTime = System.currentTimeMillis() - startTime;
                     echoMsg += (char)k;
+                    counter++;
                 } catch (Exception x) {
                     break;
                 }
@@ -105,7 +104,7 @@ public class virtualModem {
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        imgCode ="M0268\r";
+        imgCode ="M4850\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -188,7 +187,7 @@ public class virtualModem {
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        gpsCode = "P7862R=1003050\r";
+        gpsCode = "P5099=1000050\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -210,7 +209,7 @@ public class virtualModem {
                 break;
             }
         }
-        imgCode = "P7862T=225733403737\r";
+        imgCode = "P5099"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
         modem.write(imgCode.getBytes());
         for(;;){
             try{
@@ -244,24 +243,34 @@ public class virtualModem {
         String ackCode = new String();
         String nackCode = new String();
         String fcs = "";
-        char[] chars = new char[60];
+        char[] chars = new char[58];
         char[] msg = new char[16];
         boolean compare = false;
         boolean first = true;
         int k, k1, k2;
         int xor = 0;
         int counter = 0;
+        long responseTime = 0;
+        long totalResponseTime = 0;
+        long startTime = 0;
         int msgCounter = 0;
-        long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
+        int rightPackets = 0;
+        int wrongPackets = 0;
         File responseTimes = new File("ResponseTimesACK.txt");
         FileWriter writer = new FileWriter(responseTimes);
         PrintWriter pw = new PrintWriter(writer);
+        File rightPacketsFile = new File("RightPackets.txt");
+        FileWriter writerRight = new FileWriter(rightPacketsFile);
+        PrintWriter pwRight = new PrintWriter(writerRight);
+        File wrongPacketsFile = new File("WrongPackets.txt");
+        FileWriter writerWrong = new FileWriter(wrongPacketsFile);
+        PrintWriter pwWrong = new PrintWriter(writerWrong);
         Modem modem;
         modem = new Modem();
         modem.setSpeed(80000);
-        modem.setTimeout(2000);
-        ackCode = "Q2583\r";
-        nackCode = "R1335\r";
+        modem.setTimeout(1000);
+        ackCode = "Q7441\r";
+        nackCode = "R8892\r";
         modem.open("ithaki");
         for (;;) {
             try {
@@ -273,76 +282,42 @@ public class virtualModem {
                 break;
             }
         }
-
-        modem.write(ackCode.getBytes());
-        for (;;) {
-            try {
-                k = modem.read();
-                if (k == -1) break;
-                if (counter == 49 || counter == 50 || counter == 51){
-                    char currentChar = (char)k;
-                    fcs += currentChar;
-                }
-                if ((char)k == '<') {
-                    compare = true;
-                    chars[counter] = (char)k;
-                    counter++;
-                    k = modem.read();
-                }
-                else if((char)k == '>') {
-                    compare = false;
-                }
-                if (compare) {
-                    chars[counter] = (char)k;
-                    msg[msgCounter] = (char)k;
-                    counter++;
-                    msgCounter++;
-                } else {
-                    chars[counter] = (char)k;
-                    counter++;
-                }
-            } catch (Exception x) {
-                System.out.println(x);
-                break;
-            }
-        }
-        xor = msg[0] ^ msg[1];
-        for(int i = 2; i < 16; i++){
-            xor ^= msg[i];
-        }
-        System.out.println(chars);
-        System.out.println(xor);
-        while(xor != Integer.parseInt(fcs)){
-            System.out.println("We got a prob");
+        long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(4L, TimeUnit.MINUTES);
+        while(System.nanoTime() < endTime){
+            totalResponseTime = 0;
             xor = 0;
             fcs = "";
             counter = 0;
             msgCounter = 0;
-            modem.write(nackCode.getBytes());
+            modem.write(ackCode.getBytes());
+            startTime = System.currentTimeMillis();
             for (;;) {
                 try {
                     k = modem.read();
                     if (k == -1) break;
-                    if (counter == 49 || counter == 50 || counter == 51){
-                        char currentChar = (char)k;
+                    if (counter == 57) {
+                        responseTime = System.currentTimeMillis() - startTime;
+                        totalResponseTime += responseTime;
+                    }
+                    if (counter == 49 || counter == 50 || counter == 51) {
+                        char currentChar = (char) k;
                         fcs += currentChar;
                     }
-                    if ((char)k == '<') {
+                    if ((char) k == '<') {
                         compare = true;
-                        chars[counter] = (char)k;
+                        chars[counter] = (char) k;
                         counter++;
                         k = modem.read();
-                    }
-                    else if((char)k == '>') {
+                    } else if ((char) k == '>') {
                         compare = false;
                     }
                     if (compare) {
-                        chars[counter] = (char)k;
-                        msg[msgCounter] = (char)k;
+                        chars[counter] = (char) k;
+                        msg[msgCounter] = (char) k;
                         counter++;
                         msgCounter++;
                     } else {
-                        chars[counter] = (char)k;
+                        chars[counter] = (char) k;
                         counter++;
                     }
                 } catch (Exception x) {
@@ -351,31 +326,210 @@ public class virtualModem {
                 }
             }
             xor = msg[0] ^ msg[1];
-            for(int i = 2; i < 16; i++){
+            for (int i = 2; i < 16; i++) {
                 xor ^= msg[i];
             }
+            if (xor == Integer.parseInt(fcs)){
+                pw.print(totalResponseTime + ", ");
+                rightPackets++;
+                pwRight.print(rightPackets+", ");
+            }
+            System.out.println("Response time: " + responseTime);
             System.out.println(chars);
-            System.out.println(xor);
+            System.out.println("Xor: " + xor);
+            System.out.println("Right packets: "+rightPackets+". Wrong packets: "+wrongPackets);
+            while (xor != Integer.parseInt(fcs)) {
+                System.out.println("We got a prob");
+                wrongPackets++;
+                pwWrong.print(wrongPackets+", ");
+                xor = 0;
+                fcs = "";
+                counter = 0;
+                msgCounter = 0;
+                modem.write(nackCode.getBytes());
+                startTime = System.currentTimeMillis();
+                for (;;) {
+                    try {
+                        k = modem.read();
+                        if (k == -1) break;
+                        if (counter == 49 || counter == 50 || counter == 51) {
+                            char currentChar = (char) k;
+                            fcs += currentChar;
+                        }
+                        if (counter == 57) {
+                            responseTime = System.currentTimeMillis() - startTime;
+                            totalResponseTime += responseTime;
+                        }
+                        if ((char) k == '<') {
+                            compare = true;
+                            chars[counter] = (char) k;
+                            counter++;
+                            k = modem.read();
+                        } else if ((char) k == '>') {
+                            compare = false;
+                        }
+                        if (compare) {
+                            chars[counter] = (char) k;
+                            msg[msgCounter] = (char) k;
+                            counter++;
+                            msgCounter++;
+                        } else {
+                            chars[counter] = (char) k;
+                            counter++;
+                        }
+                    } catch (Exception x) {
+                        System.out.println(x);
+                        break;
+                    }
+                }
+                xor = msg[0] ^ msg[1];
+                for (int i = 2; i < 16; i++) {
+                    xor ^= msg[i];
+                }
+                if (xor == Integer.parseInt(fcs)) pw.print(totalResponseTime + ", ");
+                System.out.println("Response time: " + responseTime);
+                System.out.println(chars);
+                System.out.println("Xor: " + xor);
+            }
         }
+        pw.close();
+        pwRight.close();
+        pwWrong.close();
+        modem.close();
+    }
 
-//        System.out.println(msg);
-//        System.out.println(msg.contains(substring));
-//        while(!(msg.contains(substring))){
-//            msg = "";
-//            modem.write(nackCode.getBytes());
-//            for (;;) {
-//                try {
-//                    k = modem.read();
-//                    if (k == -1) break;
-//                    char currentChar = (char)k;
-//                    msg = msg + currentChar;
-//                    //System.out.print((char) k);
-//                } catch (Exception x) {
-//                    break;
-//                }
-//            }
-//            System.out.println(msg);
-//        }
+    public void ack2() {
+        String ackCode = new String();
+        String nackCode = new String();
+        String fcs = "";
+        char[] chars = new char[60];
+        char[] msg = new char[16];
+        boolean compare = false;
+        boolean first = true;
+        int k, k1, k2;
+        int xor = 0;
+        int counter = 0;
+        long responseTime = 0;
+        long totalResponseTime = 0;
+        long startTime = 0;
+        int msgCounter = 0;
+        int rightPackets = 0;
+        int wrongPackets = 0;
+        long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
+//        File responseTimes = new File("ResponseTimesACK.txt");
+//        FileWriter writer = new FileWriter(responseTimes);
+//        PrintWriter pw = new PrintWriter(writer);
+        Modem modem;
+        modem = new Modem();
+        modem.setSpeed(80000);
+        modem.setTimeout(2000);
+        ackCode = "Q1864\r";
+        nackCode = "R3836\r";
+        modem.open("ithaki");
+        for (; ; ) {
+            try {
+                k = modem.read();
+                if (k == -1) break;
+                System.out.print((char) k);
 
+            } catch (Exception x) {
+                break;
+            }
+        }
+        modem.write(ackCode.getBytes());
+        startTime = System.currentTimeMillis();
+        for (;;) {
+            try {
+                k = modem.read();
+                if (k == -1) break;
+                if (counter == 57) {
+                    responseTime = System.currentTimeMillis() - startTime;
+                    totalResponseTime += responseTime;
+                }
+                if (counter == 49 || counter == 50 || counter == 51) {
+                    char currentChar = (char) k;
+                    fcs += currentChar;
+                }
+                if ((char) k == '<') {
+                    compare = true;
+                    chars[counter] = (char) k;
+                    counter++;
+                    k = modem.read();
+                } else if ((char) k == '>') {
+                    compare = false;
+                }
+                if (compare) {
+                    chars[counter] = (char) k;
+                    msg[msgCounter] = (char) k;
+                    counter++;
+                    msgCounter++;
+                } else {
+                    chars[counter] = (char) k;
+                    counter++;
+                }
+            } catch (Exception x) {
+                System.out.println(x);
+                break;
+            }
+        }
+        xor = msg[0] ^ msg[1];
+        for (int i = 2; i < 16; i++) {
+            xor ^= msg[i];
+        }
+        //if (xor == Integer.parseInt(fcs)) pw.print(totalResponseTime + ", ");
+        System.out.println("Response time: " + responseTime);
+        System.out.println(chars);
+        System.out.println("Xor: " + xor);
+        while (xor != Integer.parseInt(fcs)) {
+            System.out.println("We got a prob");
+            xor = 0;
+            fcs = "";
+            counter = 0;
+            msgCounter = 0;
+            modem.write(nackCode.getBytes());
+            startTime = System.currentTimeMillis();
+            for (;;) {
+                try {
+                    k = modem.read();
+                    if (k == -1) break;
+                    if (counter == 49 || counter == 50 || counter == 51) {
+                        char currentChar = (char) k;
+                        fcs += currentChar;
+                    }
+                    if (counter == 58) {
+                        responseTime = System.currentTimeMillis() - startTime;
+                        totalResponseTime += responseTime;
+                    }
+                    if ((char) k == '<') {
+                        compare = true;
+                        chars[counter] = (char) k;
+                        counter++;
+                        k = modem.read();
+                    } else if ((char) k == '>') {
+                        compare = false;
+                    }
+                    if (compare) {
+                        chars[counter] = (char) k;
+                        msg[msgCounter] = (char) k;
+                        counter++;
+                        msgCounter++;
+                    } else {
+                        chars[counter] = (char) k;
+                        counter++;
+                    }
+                } catch (Exception x) {
+                    System.out.println(x);
+                    break;
+                }
+            }
+            xor = msg[0] ^ msg[1];
+            for (int i = 2; i < 16; i++) {
+                xor ^= msg[i];
+            }
+            //if (xor == Integer.parseInt(fcs)) pw.print(totalResponseTime + ", ");
+            System.out.println("Response time: " + responseTime);
+            System.out.println(chars);
+            System.out.println("Xor: " + xor);
+        }
     }
 }
