@@ -26,7 +26,7 @@ public class virtualModem {
 //            (new virtualModem()).echo();
 //        }
 //        else System.out.println("error");
-        (new virtualModem()).ack();
+        (new virtualModem()).gps();
     }
 
     public void demo() {
@@ -174,20 +174,24 @@ public class virtualModem {
         }
         return digit;
     }
-
     public void gps() throws IOException {
         String gpsCode = new String();
         String imgCode = new String();
-        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\img2.jpeg");
+        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\gpsImg.jpeg");
         int k;
-        int counter = 0;
+        boolean ff = false;
+        boolean d8 = false;
+        boolean d9 = false;
+        boolean stop = false;
+        int counter = 2;
+        String hex = new String();
         byte[] imgBytes = new byte[200000];
         Modem modem;
         modem = new Modem();
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        gpsCode = "P5099=1000050\r";
+        gpsCode = "P4501=1000050\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -209,31 +213,54 @@ public class virtualModem {
                 break;
             }
         }
-        imgCode = "P5099"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
+        //imgCode = "P3215"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
+        imgCode = "P4501"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
         modem.write(imgCode.getBytes());
         for(;;){
             try{
                 k = modem.read();
-                if (k==-1) break;
-                System.out.print((byte)k);
-                imgBytes[counter] = (byte)k;
-                counter++;
+                System.out.print(k+", ");
+                if (k == 255){
+                    byte firstElement = (byte)k;
+                    k = modem.read();
+                    System.out.print(k+", ");
+                    if (k == 216){
+                        imgBytes[0] = firstElement;
+                        imgBytes[1] = (byte)k;
+                        for(;;){
+                            try{
+                                k = modem.read();
+                                System.out.print(k+", ");
+                                imgBytes[counter] = (byte)k;
+                                if(k == 255){
+                                    k = modem.read();
+                                    System.out.print(k+", ");
+                                    if (k == 217){
+                                        stop = true;
+                                        break;
+                                    }
+                                    else{
+                                        counter++;
+                                        imgBytes[counter] = (byte)k;
+                                    }
+                                }
+                                counter++;
+                            } catch (Exception x){
+                                System.out.println(x);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if(stop) break;
             } catch (Exception x){
+                System.out.println(x);
                 break;
             }
         }
-        StringBuffer hexStringBuffer = new StringBuffer();
-        String hexString = new String();
-        for (int i = 0; i < imgBytes.length; i++) {
-            hexStringBuffer.append(byteToHex(imgBytes[i]));
-            hexString = hexStringBuffer.toString();
-        }
+        System.out.println(imgBytes);
 
-        hexString = StringUtils.substringBetween(hexString, "ffd8", "ffd9");
-        hexString = "ffd8" + hexString + "ffd9";
-        System.out.println(hexString);
-        byte[] finalImg = decodeHexString(hexString);
-        InputStream is = new ByteArrayInputStream(finalImg);
+        InputStream is = new ByteArrayInputStream(imgBytes);
         BufferedImage newBi = ImageIO.read(is);
         ImageIO.write(newBi, "jpeg", target.toFile());
         modem.close();
