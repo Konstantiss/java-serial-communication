@@ -26,7 +26,7 @@ public class virtualModem {
 //            (new virtualModem()).echo();
 //        }
 //        else System.out.println("error");
-        (new virtualModem()).gps();
+        (new virtualModem()).img();
     }
 
     public void demo() {
@@ -64,7 +64,7 @@ public class virtualModem {
         String echoCode = new String();
         String echoMsg = "";
         long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
-        echoCode = "E9271\r";
+        echoCode = "E2618\r";
         Modem modem;
         modem = new Modem();
         modem.setSpeed(80000);
@@ -93,7 +93,7 @@ public class virtualModem {
         modem.close();
     }
 
-    public void img() throws IOException {
+    public void img2() throws IOException {
         String imgCode = new String();
         Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\img.jpeg");
         int k;
@@ -104,7 +104,7 @@ public class virtualModem {
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        imgCode ="M4850\r";
+        imgCode ="M1869\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -143,55 +143,19 @@ public class virtualModem {
         BufferedImage newBi = ImageIO.read(is);
         ImageIO.write(newBi, "jpeg", target.toFile());
     }
-    public String byteToHex(byte num) {
-        char[] hexDigits = new char[2];
-        hexDigits[0] = Character.forDigit((num >> 4) & 0xF, 16);
-        hexDigits[1] = Character.forDigit((num & 0xF), 16);
-        return new String(hexDigits);
-    }
-    public byte[] decodeHexString(String hexString) {
-        if (hexString.length() % 2 == 1) {
-            throw new IllegalArgumentException(
-                    "Invalid hexadecimal String supplied.");
-        }
-
-        byte[] bytes = new byte[hexString.length() / 2];
-        for (int i = 0; i < hexString.length(); i += 2) {
-            bytes[i / 2] = hexToByte(hexString.substring(i, i + 2));
-        }
-        return bytes;
-    }
-    public byte hexToByte(String hexString) {
-        int firstDigit = toDigit(hexString.charAt(0));
-        int secondDigit = toDigit(hexString.charAt(1));
-        return (byte) ((firstDigit << 4) + secondDigit);
-    }
-    private int toDigit(char hexChar) {
-        int digit = Character.digit(hexChar, 16);
-        if(digit == -1) {
-            throw new IllegalArgumentException(
-                    "Invalid Hexadecimal Character: "+ hexChar);
-        }
-        return digit;
-    }
-    public void gps() throws IOException {
-        String gpsCode = new String();
+    public void img() throws IOException {
         String imgCode = new String();
-        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\gpsImg.jpeg");
+        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\imgNew.jpeg");
         int k;
-        boolean ff = false;
-        boolean d8 = false;
-        boolean d9 = false;
-        boolean stop = false;
         int counter = 2;
-        String hex = new String();
+        boolean stop = false;
         byte[] imgBytes = new byte[200000];
         Modem modem;
         modem = new Modem();
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        gpsCode = "P4501=1000050\r";
+        imgCode ="M1869\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -202,19 +166,6 @@ public class virtualModem {
                 break;
             }
         }
-        modem.write(gpsCode.getBytes());
-        for (;;) {
-            try {
-                k = modem.read();
-                if (k == -1) break;
-                System.out.print((char) k);
-
-            } catch (Exception x) {
-                break;
-            }
-        }
-        //imgCode = "P3215"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
-        imgCode = "P4501"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
         modem.write(imgCode.getBytes());
         for(;;){
             try{
@@ -258,14 +209,102 @@ public class virtualModem {
                 break;
             }
         }
-        System.out.println(imgBytes);
 
         InputStream is = new ByteArrayInputStream(imgBytes);
         BufferedImage newBi = ImageIO.read(is);
+        System.out.println(newBi == null);
         ImageIO.write(newBi, "jpeg", target.toFile());
         modem.close();
     }
 
+    public void gps() throws IOException {
+        String gpsCode = new String();
+        String imgCode = new String();
+        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\gpsImg.jpeg");
+        int k;
+        boolean stop = false;
+        int counter = 2;
+        String hex = new String();
+        byte[] imgBytes = new byte[200000];
+        Modem modem;
+        modem = new Modem();
+        modem.setSpeed(80000);
+        modem.setTimeout(2000);
+        modem.open("ithaki");
+        gpsCode = "P2923=1000050\r";
+        for (;;) {
+            try {
+                k = modem.read();
+                if (k == -1) break;
+                System.out.print((char) k);
+
+            } catch (Exception x) {
+                break;
+            }
+        }
+        modem.write(gpsCode.getBytes());
+        for (;;) {
+            try {
+                k = modem.read();
+                if (k == -1) break;
+                System.out.print((char) k);
+
+            } catch (Exception x) {
+                break;
+            }
+        }
+        imgCode = "P2923"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
+        modem.write(imgCode.getBytes());
+        for(;;){
+            try{
+                k = modem.read();
+                System.out.print(k+", ");
+                if (k == 255){
+                    byte firstElement = (byte)k;
+                    k = modem.read();
+                    System.out.print(k+", ");
+                    if (k == 216){
+                        imgBytes[0] = firstElement;
+                        imgBytes[1] = (byte)k;
+                        for(;;){
+                            try{
+                                k = modem.read();
+                                System.out.print(k+", ");
+                                imgBytes[counter] = (byte)k;
+                                if(k == 255){
+                                    k = modem.read();
+                                    System.out.print(k+", ");
+                                    if (k == 217){
+                                        stop = true;
+                                        break;
+                                    }
+                                    else{
+                                        counter++;
+                                        imgBytes[counter] = (byte)k;
+                                    }
+                                }
+                                counter++;
+                            } catch (Exception x){
+                                System.out.println(x);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if(stop) break;
+            } catch (Exception x){
+                System.out.println(x);
+                break;
+            }
+        }
+
+        InputStream is = new ByteArrayInputStream(imgBytes);
+        BufferedImage newBi = ImageIO.read(is);
+        System.out.println(newBi == null);
+        ImageIO.write(newBi, "jpeg", target.toFile());
+        modem.close();
+    }
+    //This is the functional one.
     public void ack() throws IOException {
         String ackCode = new String();
         String nackCode = new String();
@@ -558,5 +597,36 @@ public class virtualModem {
             System.out.println(chars);
             System.out.println("Xor: " + xor);
         }
+    }
+    public String byteToHex(byte num) {
+        char[] hexDigits = new char[2];
+        hexDigits[0] = Character.forDigit((num >> 4) & 0xF, 16);
+        hexDigits[1] = Character.forDigit((num & 0xF), 16);
+        return new String(hexDigits);
+    }
+    public byte[] decodeHexString(String hexString) {
+        if (hexString.length() % 2 == 1) {
+            throw new IllegalArgumentException(
+                    "Invalid hexadecimal String supplied.");
+        }
+
+        byte[] bytes = new byte[hexString.length() / 2];
+        for (int i = 0; i < hexString.length(); i += 2) {
+            bytes[i / 2] = hexToByte(hexString.substring(i, i + 2));
+        }
+        return bytes;
+    }
+    public byte hexToByte(String hexString) {
+        int firstDigit = toDigit(hexString.charAt(0));
+        int secondDigit = toDigit(hexString.charAt(1));
+        return (byte) ((firstDigit << 4) + secondDigit);
+    }
+    private int toDigit(char hexChar) {
+        int digit = Character.digit(hexChar, 16);
+        if(digit == -1) {
+            throw new IllegalArgumentException(
+                    "Invalid Hexadecimal Character: "+ hexChar);
+        }
+        return digit;
     }
 }
