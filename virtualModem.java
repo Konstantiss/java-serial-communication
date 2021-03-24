@@ -63,11 +63,11 @@ public class virtualModem {
         PrintWriter pw = new PrintWriter(writer);
         String echoCode = new String();
         String echoMsg = "";
-        echoCode = "E9181\r";
+        echoCode = "E7127\r";
         Modem modem;
         modem = new Modem();
-        modem.setSpeed(80000);
-        modem.setTimeout(100);
+        modem.setSpeed(20000);
+        modem.setTimeout(1000);
         modem.open("ithaki");
         for (;;) {
             try {
@@ -79,7 +79,7 @@ public class virtualModem {
                 break;
             }
         }
-        long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
+        long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(5L, TimeUnit.MINUTES);
         while (System.nanoTime() < endTime) {
             counter = 0;
             modem.write(echoCode.getBytes());
@@ -108,59 +108,10 @@ public class virtualModem {
         modem.close();
     }
 
-    public void img2() throws IOException {
-        String imgCode = new String();
-        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\img.jpeg");
-        int k;
-        int counter = 0;
-        byte[] imgBytes = new byte[200000];
-        Modem modem;
-        modem = new Modem();
-        modem.setSpeed(80000);
-        modem.setTimeout(2000);
-        modem.open("ithaki");
-        imgCode ="M1869\r";
-        for (;;) {
-            try {
-                k = modem.read();
-                if (k == -1) break;
-                System.out.print((char) k);
 
-            } catch (Exception x) {
-                break;
-            }
-        }
-        modem.write(imgCode.getBytes());
-        for(;;){
-            try{
-                k = modem.read();
-                if (k==-1) break;
-                System.out.print((byte)k);
-                imgBytes[counter] = (byte)k;
-                counter++;
-            } catch (Exception x){
-                break;
-            }
-        }
-        StringBuffer hexStringBuffer = new StringBuffer();
-        String hexString = new String();
-        for (int i = 0; i < imgBytes.length; i++) {
-            hexStringBuffer.append(byteToHex(imgBytes[i]));
-            hexString = hexStringBuffer.toString();
-        }
-        modem.close();
-
-        hexString = StringUtils.substringBetween(hexString, "ffd8", "ffd9");
-        hexString = "ffd8" + hexString + "ffd9";
-        System.out.println(hexString);
-        byte[] finalImg = decodeHexString(hexString);
-        InputStream is = new ByteArrayInputStream(finalImg);
-        BufferedImage newBi = ImageIO.read(is);
-        ImageIO.write(newBi, "jpeg", target.toFile());
-    }
     public void img() throws IOException {
         String imgCode = new String();
-        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\imgNew.jpeg");
+        Path target = Paths.get("D:\\IntelliJ IDEA 2020.3.2\\Directory\\src\\imgError.jpeg");
         int k;
         int counter = 2;
         boolean stop = false;
@@ -170,7 +121,7 @@ public class virtualModem {
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        imgCode ="G0350\r";
+        imgCode ="M0985\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -246,7 +197,7 @@ public class virtualModem {
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        gpsCode = "P2923=1000050\r";
+        gpsCode = "P7906=1000050\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -268,7 +219,7 @@ public class virtualModem {
                 break;
             }
         }
-        imgCode = "P2923"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
+        imgCode = "P7906"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
         modem.write(imgCode.getBytes());
         for(;;){
             try{
@@ -351,8 +302,8 @@ public class virtualModem {
         modem = new Modem();
         modem.setSpeed(80000);
         modem.setTimeout(1000);
-        ackCode = "Q3845\r";
-        nackCode = "R6539\r";
+        ackCode = "Q8737\r";
+        nackCode = "R0321\r";
         modem.open("ithaki");
         for (;;) {
             try {
@@ -364,7 +315,7 @@ public class virtualModem {
                 break;
             }
         }
-        long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(4L, TimeUnit.MINUTES);
+        long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(5L, TimeUnit.MINUTES);
         while(System.nanoTime() < endTime){
             totalResponseTime = 0;
             xor = 0;
