@@ -26,7 +26,7 @@ public class virtualModem {
 //            (new virtualModem()).echo();
 //        }
 //        else System.out.println("error");
-        (new virtualModem()).echo();
+        (new virtualModem()).gps();
     }
 
     public void demo() {
@@ -63,7 +63,7 @@ public class virtualModem {
         PrintWriter pw = new PrintWriter(writer);
         String echoCode = new String();
         String echoMsg = "";
-        echoCode = "E7127\r";
+        echoCode = "E7306\r";
         Modem modem;
         modem = new Modem();
         modem.setSpeed(20000);
@@ -121,7 +121,7 @@ public class virtualModem {
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        imgCode ="M0985\r";
+        imgCode ="G7250\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -197,7 +197,7 @@ public class virtualModem {
         modem.setSpeed(80000);
         modem.setTimeout(2000);
         modem.open("ithaki");
-        gpsCode = "P7906=1000050\r";
+        gpsCode = "P1232=1000050\r";
         for (;;) {
             try {
                 k = modem.read();
@@ -219,7 +219,7 @@ public class virtualModem {
                 break;
             }
         }
-        imgCode = "P7906"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
+        imgCode = "P1232"+"T=225735403737"+"T=225735403737"+"T=225735403736"+"T=225734403736"+"\r";
         modem.write(imgCode.getBytes());
         for(;;){
             try{
@@ -289,6 +289,7 @@ public class virtualModem {
         int msgCounter = 0;
         int rightPackets = 0;
         int wrongPackets = 0;
+        int retransimissions = 0;
         File responseTimes = new File("ResponseTimesACK.txt");
         FileWriter writer = new FileWriter(responseTimes);
         PrintWriter pw = new PrintWriter(writer);
@@ -298,12 +299,15 @@ public class virtualModem {
         File wrongPacketsFile = new File("WrongPackets.txt");
         FileWriter writerWrong = new FileWriter(wrongPacketsFile);
         PrintWriter pwWrong = new PrintWriter(writerWrong);
+        File retransmissionsFile = new File("Retransmissions.txt");
+        FileWriter writerRetransmission = new FileWriter(retransmissionsFile);
+        PrintWriter pwRetransmission = new PrintWriter(writerRetransmission);
         Modem modem;
         modem = new Modem();
         modem.setSpeed(80000);
         modem.setTimeout(1000);
-        ackCode = "Q8737\r";
-        nackCode = "R0321\r";
+        ackCode = "Q3381\r";
+        nackCode = "R3477\r";
         modem.open("ithaki");
         for (;;) {
             try {
@@ -317,6 +321,7 @@ public class virtualModem {
         }
         long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(5L, TimeUnit.MINUTES);
         while(System.nanoTime() < endTime){
+            retransimissions = 0;
             totalResponseTime = 0;
             xor = 0;
             fcs = "";
@@ -366,15 +371,19 @@ public class virtualModem {
                 pw.print(totalResponseTime + ", ");
                 rightPackets++;
                 pwRight.print(rightPackets+", ");
+                pwRetransmission.print(retransimissions+", ");
             }
             System.out.println("Response time: " + responseTime);
             System.out.println(chars);
             System.out.println("Xor: " + xor);
             System.out.println("Right packets: "+rightPackets+". Wrong packets: "+wrongPackets);
+            System.out.println("Retransmissions: " + retransimissions);
             while (xor != Integer.parseInt(fcs)) {
                 System.out.println("We got a prob");
+                retransimissions++;
                 wrongPackets++;
                 pwWrong.print(wrongPackets+", ");
+                pwRetransmission.print(retransimissions+", ");
                 xor = 0;
                 fcs = "";
                 counter = 0;
@@ -423,11 +432,13 @@ public class virtualModem {
                 System.out.println("Response time: " + responseTime);
                 System.out.println(chars);
                 System.out.println("Xor: " + xor);
+                System.out.println("Retransmissions: " + retransimissions);
             }
         }
         pw.close();
         pwRight.close();
         pwWrong.close();
+        pwRetransmission.close();
         modem.close();
     }
 
