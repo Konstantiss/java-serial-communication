@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 public class virtualModem {
     public static void main(String[] args) throws IOException {
         virtualModem vm = new virtualModem();
-        System.out.println("Choose an operation from the following: demo, echo," +
+        System.out.println("Choose an operation from the following: demo, echo, " +
                 "img, imgError, gps, arq");
         Scanner input = new Scanner(System.in);
         String operation = input.nextLine();
@@ -55,9 +55,7 @@ public class virtualModem {
 
     public void echo() throws IOException {
         int k;
-        int packetCount = 0;
         int counter = 0;
-        char[] chars = new char[100];
         long responseTime = 0;
         long startTime = 0;
         File packets = new File("packets.txt");
@@ -266,7 +264,6 @@ public class virtualModem {
         int k;
         boolean stop = false;
         int counter = 2;
-        String hex = new String();
         byte[] imgBytes = new byte[200000];
         Modem modem;
         modem = new Modem();
@@ -355,8 +352,7 @@ public class virtualModem {
         char[] chars = new char[58];
         char[] msg = new char[16];
         boolean compare = false;
-        boolean first = true;
-        int k, k1, k2;
+        int k;
         int xor = 0;
         int counter = 0;
         long responseTime = 0;
